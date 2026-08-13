@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trato Justo — App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16332B; --ink-2:#1E4237;
+    --paper:#EFE9DC; --paper-2:#E4DDC9; --paper-3:#D9D0B4;
+    --gold:#C9A227; --gold-deep:#9C7C15;
+    --clay:#B5533C;
+    --text:#2B2620; --text-soft:#5C5648; --text-faint:#8B8471;
+    --line:#D8D0B8;
+    --white:#FBFAF6;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--paper-3);
+    font-family:'Inter',sans-serif;color:var(--text);
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;padding:20px 0;
+  }
+  .caption{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;}
+
+  /* ---- device frame ---- */
+  .device{
+    width:390px;height:844px;background:var(--ink);border-radius:46px;
+    padding:14px;box-shadow:0 30px 60px -20px rgba(20,30,20,.45), 0 0 0 2px #0d1f19;
+    position:relative;
+  }
+  .screen-wrap{
+    width:100%;height:100%;background:var(--paper);border-radius:32px;overflow:hidden;
+    position:relative;display:flex;flex-direction:column;
+  }
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:120px;height:26px;background:var(--ink);border-radius:0 0 16px 16px;z-index:50;
+  }
+  .statusbar{
+    height:44px;flex-shrink:0;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 22px 6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);
+  }
+  .statusbar .icons{display:flex;gap:4px;align-items:center;font-size:11px;}
+
+  @media (max-width:480px){
+    body{padding:0;}
+    .caption{display:none;}
+    .device{width:100vw;height:100vh;border-radius:0;padding:0;box-shadow:none;}
+    .screen-wrap{border-radius:0;}
+    .notch{display:none;}
+    .statusbar{display:none;}
+  }
+
+  /* ---- app bar ---- */
+  .app-bar{
+    flex-shrink:0;min-height:52px;display:flex;align-items:center;gap:10px;
+    padding:6px 14px;border-bottom:1px solid var(--line);background:var(--paper);position:relative;z-index:10;
+  }
+  .app-bar .back{
+    width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--white);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--ink);flex-shrink:0;
+  }
+  .app-bar .title{font-family:'Fraunces',serif;font-weight:600;font-size:17px;color:var(--ink);flex:1;line-height:1.2;}
+  .app-bar .title small{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;color:var(--text-soft);}
+  .app-bar .menu-btn{
+    width:34px;height:34px;border-radius:50%;border:none;background:transparent;font-size:18px;color:var(--text-soft);cursor:pointer;
+  }
+
+  /* ---- screen area ---- */
+  .screen-area{flex:1;overflow-y:auto;position:relative;background:var(--paper);}
+  .screen{padding:16px 16px 96px;animation:slideIn .22s ease;}
+  @keyframes slideIn{ from{opacity:0; transform:translateX(14px);} to{opacity:1; transform:translateX(0);} }
+  .screen.full{padding:0 0 0;}
+
+  h1.h{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--ink);margin:6px 0 4px;}
+  p.sub{font-size:13px;color:var(--text-soft);line-height:1.5;margin:0 0 22px;}
+
+  /* ---- bottom nav ---- */
+  .bottom-nav{
+    flex-shrink:0;display:flex;border-top:1px solid var(--line);background:var(--white);
+    padding-bottom:env(safe-area-inset-bottom,0);
+  }
+  .bottom-nav button{
+    flex:1;border:none;background:transparent;padding:9px 4px 8px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text-faint);
+    font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;
+  }
+  .bottom-nav button .ic{font-size:19px;line-height:1;}
+  .bottom-nav button.active{color:var(--ink);}
+  .bottom-nav button.active .ic{transform:translateY(-1px);}
+
+  /* ---- generic inputs ---- */
+  label{display:block;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-soft);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;}
+  .field{margin-bottom:14px;}
+  input,select,textarea{
+    width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;
+    font-family:'Inter',sans-serif;font-size:14.5px;background:var(--white);color:var(--text);
+  }
+  textarea{resize:vertical;min-height:64px;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--gold-deep);outline-offset:1px;}
+
+  .btn{
+    width:100%;font-family:'Inter',sans-serif;font-weight:700;font-size:14.5px;
+    padding:14px 20px;border-radius:12px;border:none;cursor:pointer;
+    background:var(--ink);color:var(--white);
+  }
+  .btn.gold{background:var(--gold);color:var(--ink);}
+  .btn.clay{background:var(--clay);color:var(--white);}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.sticky{position:sticky;bottom:12px;box-shadow:0 8px 20px -6px rgba(22,51,43,.35);}
+
+  .role-card{
+    border:1.5px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px;
+    display:flex;align-items:center;gap:14px;cursor:pointer;background:var(--white);
+  }
+  .role-card.sel{border-color:var(--ink);background:var(--paper-2);}
+  .role-card .emoji{font-size:26px;}
+  .role-card b{display:block;font-family:'Fraunces',serif;font-size:16px;color:var(--ink);}
+  .role-card span{font-size:12px;color:var(--text-soft);}
+
+  /* seal */
+  .seal{
+    display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:50%;border:2px solid currentColor;font-family:'Fraunces',serif;
+    text-transform:uppercase;letter-spacing:.05em;transform:rotate(-8deg);flex-shrink:0;
+  }
+  .seal.direta{color:var(--ink);} .seal.mediacao_ia{color:var(--gold-deep);} .seal.mediacao_advogado{color:var(--clay);}
+
+  /* search */
+  .searchbar{display:flex;align-items:center;gap:8px;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px;}
+  .searchbar input{border:none;padding:0;font-size:14px;background:transparent;}
+  .searchbar input:focus{outline:none;}
+
+  /* property card */
+  .prop-card{
+    background:var(--white);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    margin-bottom:14px;cursor:pointer;
+  }
+  .prop-card .thumb{
+    height:140px;background:linear-gradient(135deg,var(--paper-2),var(--paper-3)) center/cover no-repeat;
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;font-size:11px;
+    position:relative;
+  }
+  .prop-card .body{padding:12px 14px 14px;}
+  .prop-card .price{font-family:'Fraunces',serif;font-size:18px;color:var(--ink);}
+  .prop-card .addr{font-size:13.5px;font-weight:600;margin:2px 0;}
+  .prop-card .meta{font-size:11.5px;color:var(--text-soft);font-family:'IBM Plex Mono',monospace;}
+  .chip{display:inline-block;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:3px 9px;border-radius:20px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .chip.direta{background:var(--paper-2);color:var(--ink);} .chip.mediacao_ia{background:#FBF3D8;color:var(--gold-deep);} .chip.mediacao_advogado{background:#F6E3DC;color:var(--clay);}
+
+  .empty{padding:50px 16px;text-align:center;color:var(--text-soft);font-size:13.5px;}
+  .empty .ic{font-size:30px;display:block;margin-bottom:10px;}
+
+  /* fab */
+  .fab{
+    position:absolute;right:18px;bottom:88px;width:54px;height:54px;border-radius:50%;
+    background:var(--gold);color:var(--ink);border:none;font-size:24px;font-weight:700;cursor:pointer;
+    box-shadow:0 10px 22px -6px rgba(156,124,21,.55);z-index:20;display:flex;align-items:center;justify-content:center;
+  }
+
+  /* detail screen */
+  .hero{height:260px;background:linear-gradient(135deg,var(--paper-2),var(--paper-3));display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;font-size:12px;position:relative;}
+  .hero-carousel{position:relative;height:260px;background:var(--paper-2);overflow:hidden;}
+  .hero-track{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;}
+  .hero-track::-webkit-scrollbar{display:none;}
+  .hero-slide{flex:0 0 100%;height:100%;background-size:cover;background-position:center;scroll-snap-align:start;}
+  .hero-counter{position:absolute;top:14px;right:14px;background:rgba(22,20,15,.55);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 10px;border-radius:20px;z-index:5;}
+  .hero-dots{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:6px;z-index:5;}
+  .hero-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);transition:.15s;}
+  .hero-dot.active{background:#fff;width:16px;border-radius:4px;}
+  .hero-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;background:rgba(22,20,15,.4);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;}
+  .hero-arrow.left{left:10px;} .hero-arrow.right{right:10px;}
+  .thumb-count{position:absolute;bottom:8px;right:8px;background:rgba(22,20,15,.55);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 8px;border-radius:20px;}
+  .detail-body{padding:18px 16px 110px;}
+  .spec-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px;}
+  .spec{background:var(--paper-2);border-radius:10px;padding:8px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text-soft);}
+  .cta-bar{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0));}
+
+  /* messages list */
+  .conv-item{display:flex;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .avatar{width:44px;height:44px;border-radius:50%;background:var(--paper-2);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;color:var(--ink);flex-shrink:0;}
+  .conv-item .mid{flex:1;min-width:0;}
+  .conv-item b{display:block;font-size:13.5px;}
+  .conv-item .prev{font-size:12px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  /* chat screen */
+  .stage-strip{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--paper);}
+  .stage-chip{flex:1;text-align:center;padding:6px 4px;border-radius:8px;font-size:10px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.03em;background:var(--paper-2);color:var(--text-faint);}
+  .stage-chip.now{background:var(--ink);color:var(--white);}
+  .stage-chip.now.ia{background:var(--gold);color:var(--ink);}
+  .stage-chip.now.adv{background:var(--clay);color:var(--white);}
+  .chat-scroll{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+  .msg{max-width:78%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.4;}
+  .msg.me{align-self:flex-end;background:var(--ink);color:var(--white);border-bottom-right-radius:3px;}
+  .msg.them{align-self:flex-start;background:var(--white);border:1px solid var(--line);border-bottom-left-radius:3px;}
+  .msg.ia{align-self:center;background:#FBF3D8;border:1px solid var(--gold);max-width:92%;}
+  .msg.advogado{align-self:center;background:#F6E3DC;border:1px solid var(--clay);max-width:92%;}
+  .msg .role{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;opacity:.7;}
+  .typing{align-self:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);}
+
+  .chat-input-bar{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);background:var(--paper);}
+  .icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0;}
+  .chat-input-bar input{flex:1;border-radius:20px;}
+  .send-btn{width:40px;height:40px;border-radius:50%;border:none;background:var(--ink);color:var(--white);font-size:16px;cursor:pointer;flex-shrink:0;}
+
+  /* bottom sheet */
+  .sheet-overlay{position:absolute;inset:0;background:rgba(22,20,15,.4);z-index:40;display:flex;align-items:flex-end;}
+  .sheet{width:100%;background:var(--white);border-radius:20px 20px 0 0;padding:10px 18px calc(20px + env(safe-area-inset-bottom,0));animation:sheetUp .2s ease;}
+  @keyframes sheetUp{ from{transform:translateY(30px); opacity:.4;} to{transform:translateY(0); opacity:1;} }
+  .sheet .handle{width:38px;height:4px;background:var(--line);border-radius:4px;margin:6px auto 16px;}
+  .sheet h3{font-family:'Fraunces',serif;font-size:16px;margin:0 0 4px;color:var(--ink);}
+  .sheet p{font-size:12.5px;color:var(--text-soft);margin:0 0 16px;line-height:1.5;}
+  .sheet-action{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .sheet-action:last-of-type{border-bottom:none;}
+  .sheet-action .ic{font-size:20px;width:30px;text-align:center;}
+  .sheet-action b{display:block;font-size:13.5px;}
+  .sheet-action span{font-size:11.5px;color:var(--text-soft);}
+  .sheet-action.disabled{opacity:.4;pointer-events:none;}
+  .sheet-close{margin-top:8px;}
+
+  /* profile */
+  .profile-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:20px;text-align:center;margin-bottom:20px;}
+  .profile-card .avatar{width:64px;height:64px;font-size:22px;margin:0 auto 10px;}
+  .profile-card b{font-family:'Fraunces',serif;font-size:18px;color:var(--ink);display:block;}
+  .profile-card span{font-size:12px;color:var(--text-soft);}
+  .info-row{display:flex;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--line);font-size:13px;}
+  .info-row span:first-child{color:var(--text-soft);}
+</style>
+</head>
+<body>
+  <div class="caption">Trato Justo · protótipo de UX/UI mobile (não é build nativa — é a casca navegável)</div>
+  <div class="device">
+    <div class="screen-wrap">
+      <div class="notch"></div>
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="icons">•••  📶  🔋</span>
+      </div>
+      <div class="app-bar" id="appBar"></div>
+      <div class="screen-area" id="screenArea"></div>
+      <div class="bottom-nav" id="bottomNav" style="display:none;"></div>
+    </div>
+  </div>
+
+<script>
+/* =============== estado & navegação =============== */
+const state = {
+  user: null,
+  mainTab: 'home',       // home | mensagens | perfil
+  stack: [],              // telas empilhadas: {name, params}
+  imoveis: [],
+  conversas: {},
+  search: '',
+  authTipo: null,
+  sheetOpen: false,
+  sending: false,
+};
+const $ = (s,e=document)=>e.querySelector(s);
+const $$ = (s,e=document)=>[...e.querySelectorAll(s)];
+const uid = p => p+'-'+Math.random().toString(36).slice(2,8);
+const protocolo = () => 'TJ-'+Math.floor(100000+Math.random()*899999);
+function fotosOf(im){ return im.fotos && im.fotos.length ? im.fotos : (im.foto ? [im.foto] : []); }
+
+function push(name, params={}){ state.stack.push({name, params}); state.sheetOpen=false; render(); }
+function pop(){ state.stack.pop(); state.sheetOpen=false; render(); }
+function setTab(tab){ state.stack=[]; state.mainTab=tab; render(); }
+
+/* =============== dados mockados (demo) =============== */
+const MOCK_IMOVEIS = [
+  { id:'imv-mock1', donoId:'dono-mock-carla', donoNome:'Carla Menezes',
+    endereco:'Rua Harmonia, 452, apto 61', bairro:'Vila Madalena, São Paulo',
+    valor:'3200', quartos:'2 quartos, 1 banheiro', area:'68',
+    fotos:['https://picsum.photos/seed/tj1a/700/500','https://picsum.photos/seed/tj1b/700/500','https://picsum.photos/seed/tj1c/700/500'],
+    desc:'Apartamento reformado a 5 min do metrô, cozinha americana, aceita pet pequeno. Prédio com portaria 24h.' },
+  { id:'imv-mock2', donoId:'dono-mock-carla', donoNome:'Carla Menezes',
+    endereco:'Av. Ipiranga, 1100, apto 302', bairro:'República, São Paulo',
+    valor:'1950', quartos:'1 quarto, 1 banheiro', area:'38',
+    fotos:['https://picsum.photos/seed/tj2a/700/500','https://picsum.photos/seed/tj2b/700/500'],
+    desc:'Studio compacto, mobiliado, ótimo para quem trabalha no centro. Não aceita pet.' },
+  { id:'imv-mock3', donoId:'dono-mock-ricardo', donoNome:'Ricardo Assis',
+    endereco:'Rua dos Pinheirais, 88', bairro:'Pinheiros, São Paulo',
+    valor:'4500', quartos:'3 quartos, 2 banheiros', area:'110',
+    fotos:['https://picsum.photos/seed/tj3a/700/500','https://picsum.photos/seed/tj3b/700/500','https://picsum.photos/seed/tj3c/700/500','https://picsum.photos/seed/tj3d/700/500'],
+    desc:'Casa térrea com quintal, vaga para 2 carros, reformada em 2024. Próxima a escolas e mercado.' },
+  { id:'imv-mock4', donoId:'dono-mock-ricardo', donoNome:'Ricardo Assis',
+    endereco:'Rua Fradique Coutinho, 210, apto 12', bairro:'Vila Madalena, São Paulo',
+    valor:'2750', quartos:'2 quartos, 1 banheiro', area:'55',
+    fotos:['https://picsum.photos/seed/tj4a/700/500','https://picsum.photos/seed/tj4b/700/500'],
+    desc:'Apartamento claro, andar alto, varanda gourmet. Condomínio com academia e salão de festas.' },
+  { id:'imv-mock5', donoId:'dono-mock-fernanda', donoNome:'Fernanda Lima',
+    endereco:'Rua Girassol, 340', bairro:'Vila Madalena, São Paulo',
+    valor:'5200', quartos:'3 quartos, 3 banheiros', area:'140',
+    fotos:['https://picsum.photos/seed/tj5a/700/500','https://picsum.photos/seed/tj5b/700/500','https://picsum.photos/seed/tj5c/700/500'],
+    desc:'Sobrado amplo, escritório separado, churrasqueira. Ideal para famílias, aceita pets de qualquer porte.' },
+];
+
+const MOCK_CONVERSAS = {
+  'imv-mock1': {
+    stage: 'direta',
+    messages: [
+      { from:'cliente', text:'Oi, Carla! Vi o anúncio do apto na Vila Madalena, ainda está disponível?' },
+      { from:'dono', text:'Oi! Está sim :) Pode ser pra entrar já no próximo mês.' },
+      { from:'cliente', text:'Perfeito. O valor do condomínio está incluso nos R$3.200?' },
+    ]
+  },
+  'imv-mock3': {
+    stage: 'mediacao_ia',
+    messages: [
+      { from:'cliente', text:'Ricardo, o contrato que você mandou fala em caução de 3 meses, mas no anúncio não tinha isso.' },
+      { from:'dono', text:'É padrão eu pedir caução de 3 meses, sempre foi assim pra todo mundo que já alugou comigo.' },
+      { from:'cliente', text:'Mas isso muda muito meu planejamento, eu já tinha me organizado com base no que estava anunciado.' },
+      { from:'dono', text:'Entendo, mas não posso abrir mão da garantia, é um risco pra mim também.' },
+      { from:'ia', text:'Resumindo o impasse: o locatário se baseou no anúncio, que não mencionava caução, enquanto o locador considera a garantia de 3 meses uma condição padrão e não negociável. Dois caminhos possíveis: (1) o locador aceitar diluir a caução em parcelas ao longo dos primeiros meses de contrato, ou (2) considerar uma alternativa de garantia, como seguro-fiança, que reduz o valor inicial para o locatário mantendo a proteção para o locador. Vale atualizar o anúncio para deixar essa condição clara em negociações futuras. Esta é uma sugestão de mediação, não aconselhamento jurídico.' },
+    ]
+  },
+  'imv-mock5': {
+    stage: 'mediacao_advogado',
+    messages: [
+      { from:'cliente', text:'Fernanda, a vistoria de saída apontou reparos que eu não acho que sejam da minha responsabilidade.' },
+      { from:'dono', text:'Os itens listados são desgastes que não existiam quando você entrou, tenho as fotos da vistoria inicial.' },
+      { from:'cliente', text:'Parte deles eu concordo, mas o problema da infiltração já existia, isso é estrutural.' },
+      { from:'ia', text:'O ponto de discordância principal é se a infiltração é um desgaste natural/estrutural (responsabilidade do locador) ou dano causado durante a locação (responsabilidade do locatário). Sugiro comparar as fotos da vistoria de entrada e saída item a item, separando o que é consenso do que é contestado, e solicitar um laudo técnico simples para o item da infiltração antes de fechar os descontos da caução. Esta é uma sugestão de mediação, não aconselhamento jurídico.' },
+      { from:'advogado', text:'Caso encaminhado para análise jurídica humana. Protocolo TJ-482913. Um(a) advogado(a) parceiro(a) revisa a conversa, as fotos de vistoria e a sugestão da mediação por IA, e retorna por aqui em até 24h úteis com uma recomendação sobre a divisão dos custos de reparo. (Neste protótipo, é uma simulação — não há um advogado real do outro lado.)' },
+    ]
+  }
+};
+
+/* =============== storage =============== */
+async function loadAll(){
+  try{ const u = await window.storage.get('perfil', false); if(u) state.user = JSON.parse(u.value); }catch(e){}
+
+  try{
+    const l = await window.storage.get('imoveis-lista', true);
+    state.imoveis = l ? JSON.parse(l.value) : [];
+  }catch(e){ state.imoveis=[]; }
+  if(state.imoveis.length===0){ state.imoveis = MOCK_IMOVEIS.slice(); await saveImoveis(); }
+
+  try{
+    const c = await window.storage.get('conversas', true);
+    state.conversas = c ? JSON.parse(c.value) : {};
+  }catch(e){ state.conversas={}; }
+  if(Object.keys(state.conversas).length===0){ state.conversas = JSON.parse(JSON.stringify(MOCK_CONVERSAS)); await saveConversas(); }
+
+  render();
+}
+async function saveUser(){ try{ await window.storage.set('perfil', JSON.stringify(state.user), false); }catch(e){} }
+async function saveImoveis(){ try{ await window.storage.set('imoveis-lista', JSON.stringify(state.imoveis), true); }catch(e){} }
+async function saveConversas(){ try{ await window.storage.set('conversas', JSON.stringify(state.conversas), true); }catch(e){} }
+
+/* =============== render raiz =============== */
+function render(){
+  if(!state.user){ renderAuth(); return; }
+  const top = state.stack[state.stack.length-1];
+  $('#bottomNav').style.display = top ? 'none' : 'flex';
+  renderBottomNav();
+  if(top){ renderPushed(top); }
+  else{
+    if(state.mainTab==='home') renderHome();
+    else if(state.mainTab==='mensagens') renderMensagensList();
+    else renderPerfil();
+  }
+}
+
+function setAppBar({title, sub, back, menu}){
+  const bar = $('#appBar');
+  bar.innerHTML = `
+    ${back ? `<button class="back" id="btnBack">‹</button>` : ''}
+    <div class="title">${title}${sub ? `<small>${sub}</small>`:''}</div>
+    ${menu ? `<button class="menu-btn" id="btnMenu">⋯</button>` : ''}
+  `;
+  if(back) $('#btnBack').onclick = pop;
+  if(menu) $('#btnMenu').onclick = menu;
+}
+
+function renderBottomNav(){
+  const nav = $('#bottomNav');
+  const tabs = [
+    {k:'home', ic:'🏠', label: state.user.tipo==='dono' ? 'Meus imóveis' : 'Buscar'},
+    {k:'mensagens', ic:'💬', label:'Mensagens'},
+    {k:'perfil', ic:'👤', label:'Perfil'},
+  ];
+  nav.innerHTML = tabs.map(t=>`
+    <button data-tab="${t.k}" class="${state.mainTab===t.k?'active':''}">
+      <span class="ic">${t.ic}</span>${t.label}
+    </button>`).join('');
+  $$('#bottomNav button').forEach(b=> b.onclick = ()=> setTab(b.dataset.tab));
+}
+
+/* =============== AUTH FLOW =============== */
+function renderAuth(){
+  $('#bottomNav').style.display='none';
+  if(!state.authTipo){
+    setAppBar({title:'Trato Justo', sub:'Aluguel direto, com mediação'});
+    $('#screenArea').innerHTML = `
+      <div class="screen">
+        <h1 class="h">Como você vai usar o app?</h1>
+        <p class="sub">Isso define o que aparece na sua tela inicial. Dá pra ajustar depois no perfil.</p>
+        <div class="role-card" data-tipo="cliente">
+          <div class="emoji">🔑</div>
+          <div><b>Quero alugar</b><span>Buscar imóveis e falar com donos</span></div>
+        </div>
+        <div class="role-card" data-tipo="dono">
+          <div class="emoji">🏡</div>
+          <div><b>Quero anunciar</b><span>Cadastrar meu imóvel para alugar</span></div>
+        </div>
+        <p class="sub" style="margin-top:22px;">Quer só ver o app funcionando, sem digitar nada?</p>
+        <button class="btn ghost" id="btnDemoCliente" style="margin-bottom:10px;">Entrar como cliente (demo)</button>
+        <button class="btn ghost" id="btnDemoDono">Entrar como dono (demo)</button>
+      </div>`;
+    $$('.role-card').forEach(c=> c.onclick = ()=>{ state.authTipo = c.dataset.tipo; render(); });
+    $('#btnDemoCliente').onclick = ()=> entrarDemo('cliente');
+    $('#btnDemoDono').onclick = ()=> entrarDemo('dono');
+    return;
+  }
+  setAppBar({title:'Cadastro rápido', sub: state.authTipo==='dono' ? 'Perfil: dono(a) de imóvel' : 'Perfil: locatário(a)', back:true});
+  $('#appBar').querySelector('#btnBack') && ($('#appBar').querySelector('#btnBack').onclick = ()=>{ state.authTipo=null; render(); });
+  $('#screenArea').innerHTML = `
+    <div class="screen">
+      <p class="sub">Só o essencial pra começar a conversar. Documentos e verificação completa entram na etapa de contrato.</p>
+      <div class="field"><label>Nome completo</label><input id="fNome" placeholder="Ana Souza"></div>
+      <div class="field"><label>Telefone / WhatsApp</label><input id="fTel" placeholder="(11) 90000-0000"></div>
+      <div class="field"><label>E-mail</label><input id="fEmail" placeholder="ana@email.com"></div>
+      <button class="btn gold" id="btnCriar" style="margin-top:8px;">Criar conta</button>
+    </div>`;
+  $('#btnCriar').onclick = async ()=>{
+    const nome=$('#fNome').value.trim(), tel=$('#fTel').value.trim(), email=$('#fEmail').value.trim();
+    if(!nome||!tel||!email){ alert('Preencha nome, telefone e e-mail.'); return; }
+    state.user = { id: uid('user'), nome, telefone:tel, email, tipo: state.authTipo, protocolo: protocolo() };
+    state.authTipo = null;
+    await saveUser();
+    render();
+  };
+}
+
+async function entrarDemo(tipo){
+  state.user = tipo==='dono'
+    ? { id:'dono-mock-ricardo', nome:'Ricardo Assis', telefone:'(11) 98888-2211', email:'ricardo.assis@email.com', tipo:'dono', protocolo: protocolo() }
+    : { id:uid('user'), nome:'Juliana Prado', telefone:'(11) 97777-4433', email:'juliana.prado@email.com', tipo:'cliente', protocolo: protocolo() };
+  state.authTipo = null;
+  await saveUser();
+  render();
+}
+
+/* =============== HOME =============== */
+function renderHome(){
+  if(state.user.tipo==='dono') renderHomeDono();
+  else renderHomeCliente();
+}
+
+function renderHomeCliente(){
+  setAppBar({title:'Buscar imóveis', sub:`Olá, ${state.user.nome.split(' ')[0]}`});
+  const filtered = state.imoveis.filter(im => (im.endereco+' '+(im.bairro||'')).toLowerCase().includes(state.search.toLowerCase()));
+  $('#screenArea').innerHTML = `
+    <div class="screen">
+      <div class="searchbar">🔎 <input id="searchInput" placeholder="Bairro, cidade ou rua" value="${state.search}"></div>
+      <div id="propList"></div>
+    </div>`;
+  $('#searchInput').oninput = e=>{ state.search = e.target.value; renderPropList(filtered_by(e.target.value)); };
+  function filtered_by(q){ return state.imoveis.filter(im => (im.endereco+' '+(im.bairro||'')).toLowerCase().includes(q.toLowerCase())); }
+  renderPropList(filtered);
+
+  function renderPropList(list){
+    const wrap = $('#propList');
+    if(list.length===0){ wrap.innerHTML = `<div class="empty"><span class="ic">🗂️</span>Nenhum imóvel encontrado.<br>Peça para um dono(a) publicar um anúncio.</div>`; return; }
+    wrap.innerHTML = list.map(im=>`
+      <div class="prop-card" data-id="${im.id}">
+        <div class="thumb">${fotosOf(im).length ? '' : 'sem foto'}${fotosOf(im).length>1 ? `<span class="thumb-count">📷 ${fotosOf(im).length}</span>`:''}</div>
+        <div class="body">
+          <div class="price">R$ ${Number(im.valor).toLocaleString('pt-BR')}<span style="font-size:12px;color:var(--text-soft);"> /mês</span></div>
+          <div class="addr">${im.endereco}</div>
+          <div class="meta">${im.bairro||''}${im.quartos?' · '+im.quartos:''}</div>
+        </div>
+      </div>`).join('');
+    $$('.prop-card', wrap).forEach(c => c.onclick = ()=> push('detalhe', {id:c.dataset.id}));
+    wrap.querySelectorAll('.thumb').forEach((t,i)=>{ const f=fotosOf(list[i])[0]; if(f) t.style.background = `url('${f}') center/cover`; });
+  }
+}
+
+function renderHomeDono(){
+  setAppBar({title:'Meus imóveis', sub:`Olá, ${state.user.nome.split(' ')[0]}`});
+  const meus = state.imoveis.filter(i=>i.donoId===state.user.id);
+  $('#screenArea').innerHTML = `
+    <div class="screen" style="position:relative;">
+      ${meus.length===0 ? `<div class="empty"><span class="ic">🏡</span>Você ainda não anunciou nenhum imóvel.<br>Toque no + para começar.</div>` :
+        meus.map(im=>`
+        <div class="prop-card" data-id="${im.id}">
+          <div class="thumb" style="${fotosOf(im)[0]?`background:url('${fotosOf(im)[0]}') center/cover`:''}">${fotosOf(im)[0]?'':'sem foto'}${fotosOf(im).length>1?`<span class="thumb-count">📷 ${fotosOf(im).length}</span>`:''}</div>
+          <div class="body">
+            <div class="price">R$ ${Number(im.valor).toLocaleString('pt-BR')}<span style="font-size:12px;color:var(--text-soft);"> /mês</span></div>
+            <div class="addr">${im.endereco}</div>
+            <div class="meta">${im.bairro||''}${im.quartos?' · '+im.quartos:''}</div>
+          </div>
+        </div>`).join('')
+      }
+    </div>
+    <button class="fab" id="fabAdd">+</button>`;
+  $$('.prop-card').forEach(c=> c.onclick = ()=> push('detalhe', {id:c.dataset.id}));
+  $('#fabAdd').onclick = ()=> push('publicar');
+}
+
+/* =============== TELAS EMPILHADAS =============== */
+function renderPushed(top){
+  if(top.name==='detalhe') return renderDetalhe(top.params.id);
+  if(top.name==='publicar') return renderPublicar();
+  if(top.name==='chat') return renderChat(top.params.imovelId);
+}
+
+function renderDetalhe(id){
+  const im = state.imoveis.find(i=>i.id===id);
+  if(!im){ setAppBar({title:'Imóvel', back:true}); $('#screenArea').innerHTML = `<div class="empty">Imóvel não encontrado.</div>`; return; }
+  setAppBar({title: im.endereco, sub: im.bairro||'', back:true});
+  const souDono = im.donoId === state.user.id;
+  const fotos = fotosOf(im);
+  $('#screenArea').innerHTML = `
+    <div class="screen full">
+      <div class="hero-carousel">
+        ${fotos.length ? `
+          <div class="hero-track" id="heroTrack">
+            ${fotos.map(f=>`<div class="hero-slide" style="background-image:url('${f}')"></div>`).join('')}
+          </div>
+          ${fotos.length>1 ? `
+            <div class="hero-counter" id="heroCounter">1 / ${fotos.length}</div>
+            <button class="hero-arrow left" id="heroPrev">‹</button>
+            <button class="hero-arrow right" id="heroNext">›</button>
+            <div class="hero-dots" id="heroDots">${fotos.map((_,i)=>`<div class="hero-dot ${i===0?'active':''}"></div>`).join('')}</div>
+          ` : ''}
+        ` : `<div class="hero">sem foto</div>`}
+      </div>
+      <div class="detail-body">
+        <div class="price" style="font-size:22px;">R$ ${Number(im.valor).toLocaleString('pt-BR')}<span style="font-size:13px;color:var(--text-soft);"> /mês</span></div>
+        <p class="sub" style="margin:10px 0 4px;">${im.desc || 'Sem descrição adicional.'}</p>
+        <div class="spec-row">
+          ${im.quartos?`<div class="spec">${im.quartos}</div>`:''}
+          ${im.area?`<div class="spec">${im.area} m²</div>`:''}
+          <div class="spec">Anunciado por ${im.donoNome}</div>
+        </div>
+      </div>
+    </div>
+    ${!souDono ? `<div class="cta-bar"><button class="btn gold" id="btnConversar">Conversar com o dono</button></div>` : ''}
+  `;
+  if(!souDono){
+    $('#btnConversar').onclick = ()=>{ ensureConversa(im.id); push('chat', {imovelId: im.id}); };
+  }
+  if(fotos.length>1){
+    const track = $('#heroTrack');
+    const dots = $$('.hero-dot', $('#heroDots'));
+    const counter = $('#heroCounter');
+    function goTo(i){
+      i = Math.max(0, Math.min(fotos.length-1, i));
+      track.scrollTo({left: track.clientWidth*i, behavior:'smooth'});
+    }
+    function updateFromScroll(){
+      const i = Math.round(track.scrollLeft / track.clientWidth);
+      dots.forEach((d,di)=> d.classList.toggle('active', di===i));
+      counter.textContent = `${i+1} / ${fotos.length}`;
+    }
+    track.addEventListener('scroll', ()=>{ clearTimeout(track._t); track._t = setTimeout(updateFromScroll, 60); });
+    $('#heroPrev').onclick = ()=>{ const i = Math.round(track.scrollLeft/track.clientWidth); goTo(i-1); };
+    $('#heroNext').onclick = ()=>{ const i = Math.round(track.scrollLeft/track.clientWidth); goTo(i+1); };
+  }
+}
+
+function renderPublicar(){
+  setAppBar({title:'Anunciar imóvel', back:true});
+  $('#screenArea').innerHTML = `
+    <div class="screen">
+      <div class="field"><label>Endereço</label><input id="iEndereco" placeholder="Rua das Acácias, 123"></div>
+      <div class="field"><label>Bairro / cidade</label><input id="iBairro" placeholder="Pinheiros, São Paulo"></div>
+      <div class="field"><label>Valor do aluguel (R$)</label><input id="iValor" type="number" placeholder="2500"></div>
+      <div class="field"><label>Quartos / banheiros</label><input id="iQuartos" placeholder="2 quartos, 1 banheiro"></div>
+      <div class="field"><label>Área (m²)</label><input id="iArea" type="number" placeholder="65"></div>
+      <div class="field"><label>Fotos (URLs separadas por vírgula, opcional)</label><input id="iFoto" placeholder="https://foto1.jpg, https://foto2.jpg"></div>
+      <div class="field"><label>Descrição</label><textarea id="iDesc" placeholder="Reformado, perto do metrô, aceita pet..."></textarea></div>
+      <button class="btn gold" id="btnPublicar">Publicar imóvel</button>
+    </div>`;
+  $('#btnPublicar').onclick = async ()=>{
+    const endereco=$('#iEndereco').value.trim(), valor=$('#iValor').value;
+    if(!endereco||!valor){ alert('Informe ao menos endereço e valor.'); return; }
+    const fotos = $('#iFoto').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const novo = { id:uid('imv'), donoId:state.user.id, donoNome:state.user.nome, endereco,
+      bairro:$('#iBairro').value.trim(), valor, quartos:$('#iQuartos').value.trim(),
+      area:$('#iArea').value, fotos, desc:$('#iDesc').value.trim() };
+    state.imoveis.push(novo);
+    await saveImoveis();
+    pop();
+  };
+}
+
+/* =============== MENSAGENS =============== */
+function ensureConversa(imovelId){
+  if(!state.conversas[imovelId]) state.conversas[imovelId] = { stage:'direta', messages:[] };
+}
+
+function renderMensagensList(){
+  setAppBar({title:'Mensagens'});
+  const relevantes = state.imoveis.filter(im => im.donoId===state.user.id || state.conversas[im.id]);
+  $('#screenArea').innerHTML = `<div class="screen">${
+    relevantes.length===0 ? `<div class="empty"><span class="ic">💬</span>Nenhuma conversa ainda.<br>Busque um imóvel e fale com o dono(a).</div>` :
+    relevantes.map(im=>{
+      const conv = state.conversas[im.id] || {stage:'direta', messages:[]};
+      const last = conv.messages[conv.messages.length-1];
+      return `<div class="conv-item" data-id="${im.id}">
+        <div class="avatar">${im.endereco.charAt(0)}</div>
+        <div class="mid">
+          <b>${im.endereco}</b>
+          <div class="prev">${last ? last.text : 'Nenhuma mensagem ainda'}</div>
+        </div>
+        <span class="chip ${conv.stage}">${conv.stage==='direta'?'Direto':conv.stage==='mediacao_ia'?'IA':'Advogado'}</span>
+      </div>`;
+    }).join('')
+  }</div>`;
+  $$('.conv-item').forEach(c=> c.onclick = ()=>{ ensureConversa(c.dataset.id); push('chat', {imovelId:c.dataset.id}); });
+}
+
+function renderChat(imovelId){
+  const im = state.imoveis.find(i=>i.id===imovelId);
+  ensureConversa(imovelId);
+  const conv = state.conversas[imovelId];
+  const outro = state.user.tipo==='dono' ? 'cliente' : 'dono';
+
+  setAppBar({
+    title: im.endereco, sub: state.user.tipo==='dono' ? 'com locatário(a)' : `com ${im.donoNome}`,
+    back:true, menu: ()=> abrirMenuDev()
+  });
+
+  $('#screenArea').innerHTML = `
+    <div class="screen full" style="display:flex;flex-direction:column;min-height:100%;position:relative;">
+      <div class="stage-strip">
+        <div class="stage-chip ${conv.stage==='direta'?'now':''}">Direto</div>
+        <div class="stage-chip ${conv.stage==='mediacao_ia'?'now ia':''}">Mediação IA</div>
+        <div class="stage-chip ${conv.stage==='mediacao_advogado'?'now adv':''}">Advogado(a)</div>
+      </div>
+      <div class="chat-scroll" id="chatScroll"></div>
+      <div class="chat-input-bar">
+        <button class="icon-btn" id="btnSheet">⚖️</button>
+        <input id="chatInput" placeholder="Escreva sua mensagem...">
+        <button class="send-btn" id="btnSend">➤</button>
+      </div>
+    </div>`;
+
+  paintMessages();
+  $('#btnSend').onclick = enviar;
+  $('#chatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
+  $('#btnSheet').onclick = abrirSheetMediacao;
+
+  function paintMessages(){
+    const box = $('#chatScroll');
+    if(conv.messages.length===0){
+      box.innerHTML = `<div class="empty"><span class="ic">✎</span>Diga olá para começar.</div>`;
+      return;
+    }
+    box.innerHTML = conv.messages.map(m=>{
+      const isMe = m.from===state.user.tipo;
+      const cls = m.from==='ia'?'ia':m.from==='advogado'?'advogado':(isMe?'me':'them');
+      const roleLabel = m.from==='ia'?'Mediador(a) IA':m.from==='advogado'?'Advogado(a) parceiro(a)':(m.from==='dono'?'Dono(a)':'Locatário(a)');
+      return `<div class="msg ${cls}"><span class="role">${roleLabel}</span>${m.text}</div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function enviar(){
+    const input = $('#chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    conv.messages.push({from: state.user.tipo, text});
+    input.value='';
+    paintMessages();
+    await saveConversas();
+  }
+
+  function abrirMenuDev(){
+    const respostas = [
+      'Entendo o seu ponto, mas vejo a situação de outro jeito.',
+      'Podemos conversar melhor sobre isso? Quero resolver da forma mais justa.',
+      'Não concordo totalmente, mas estou aberto(a) a uma solução.',
+      'Isso não estava claro para mim quando combinamos.',
+    ];
+    if(confirm('[Ferramenta de teste]\nSimular resposta da outra parte?')){
+      conv.messages.push({from: outro, text: respostas[Math.floor(Math.random()*respostas.length)]});
+      paintMessages();
+      saveConversas();
+    }
+  }
+
+  function abrirSheetMediacao(){
+    const area = $('.screen.full');
+    const overlay = document.createElement('div');
+    overlay.className = 'sheet-overlay';
+    overlay.innerHTML = `
+      <div class="sheet">
+        <div class="handle"></div>
+        <h3>Precisa de ajuda para resolver?</h3>
+        <p>Escale a conversa passo a passo — primeiro a IA tenta encontrar um meio-termo, depois um advogado parceiro pode revisar o caso.</p>
+        <div class="sheet-action" id="actIA" ${conv.stage!=='direta'?'style="opacity:.4;pointer-events:none;"':''}>
+          <div class="ic">🤖</div><div><b>Pedir mediação da IA</b><span>Resumo neutro + sugestão de solução</span></div>
+        </div>
+        <div class="sheet-action" id="actAdv" ${conv.stage!=='mediacao_ia'?'style="opacity:.4;pointer-events:none;"':''}>
+          <div class="ic">⚖️</div><div><b>Escalar para advogado(a)</b><span>Encaminha o caso com nº de protocolo</span></div>
+        </div>
+        <button class="btn ghost sheet-close" id="closeSheet">Fechar</button>
+      </div>`;
+    $('#screenArea').appendChild(overlay);
+    $('#closeSheet').onclick = ()=> overlay.remove();
+    overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
+    $('#actIA').onclick = async ()=>{ overlay.remove(); await pedirMediacaoIA(); };
+    $('#actAdv').onclick = async ()=>{ overlay.remove(); await escalarAdvogado(); };
+  }
+
+  async function pedirMediacaoIA(){
+    if(conv.messages.length===0){ alert('Troque ao menos uma mensagem antes de pedir mediação.'); return; }
+    conv.stage = 'mediacao_ia';
+    render();
+    const box = document.querySelector('#chatScroll');
+    if(box){ box.insertAdjacentHTML('beforeend', `<div class="typing" id="typingIA">Mediador(a) IA está analisando a conversa…</div>`); box.scrollTop = box.scrollHeight; }
+    try{
+      const historico = conv.messages.map(m=>`${m.from}: ${m.text}`).join('\n');
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          model:"claude-sonnet-4-6", max_tokens:1000,
+          system:"Você é um mediador neutro de conflitos entre locador (dono do imóvel) e locatário (cliente) em um app de aluguel. Leia a conversa e escreva, em português do Brasil, uma mensagem curta e prática (até 120 palavras) que: (1) resume o impasse de forma neutra, sem tomar partido, (2) proponha 1 ou 2 caminhos concretos de solução. Termine deixando claro que é uma sugestão de mediação, não aconselhamento jurídico.",
+          messages:[{role:"user", content:`Conversa até agora:\n\n${historico}\n\nEscreva a mensagem de mediação.`}]
+        })
+      });
+      const data = await response.json();
+      const textoIA = (data.content||[]).map(b=>b.text||'').join('\n').trim() || 'Não consegui gerar uma sugestão agora. Tente novamente.';
+      conv.messages.push({from:'ia', text: textoIA});
+    }catch(err){
+      conv.messages.push({from:'ia', text:'Não foi possível conectar ao mediador de IA agora. Tente novamente em instantes.'});
+    }
+    await saveConversas();
+    render();
+  }
+
+  async function escalarAdvogado(){
+    conv.stage = 'mediacao_advogado';
+    const proto = protocolo();
+    conv.messages.push({from:'advogado', text:`Caso encaminhado para análise jurídica humana. Protocolo ${proto}. Um(a) advogado(a) parceiro(a) revisa a conversa e as sugestões da mediação por IA, e retorna por aqui em até 24h úteis. (Neste protótipo, é uma simulação — não há um advogado real do outro lado.)`});
+    await saveConversas();
+    render();
+  }
+}
+
+/* =============== PERFIL =============== */
+function renderPerfil(){
+  setAppBar({title:'Perfil'});
+  $('#screenArea').innerHTML = `
+    <div class="screen">
+      <div class="profile-card">
+        <div class="avatar" style="margin:0 auto 10px;width:64px;height:64px;font-size:22px;">${state.user.nome.charAt(0)}</div>
+        <b>${state.user.nome}</b>
+        <span>${state.user.tipo==='dono' ? 'Dono(a) de imóvel' : 'Locatário(a)'}</span>
+      </div>
+      <div class="info-row"><span>E-mail</span><span>${state.user.email}</span></div>
+      <div class="info-row"><span>Telefone</span><span>${state.user.telefone}</span></div>
+      <div class="info-row"><span>Protocolo</span><span>${state.user.protocolo}</span></div>
+      <button class="btn ghost" id="btnSair" style="margin-top:24px;">Sair da conta</button>
+    </div>`;
+  $('#btnSair').onclick = async ()=>{
+    state.user = null; state.stack=[]; state.mainTab='home';
+    try{ await window.storage.delete('perfil', false); }catch(e){}
+    render();
+  };
+}
+
+loadAll();
+</script>
+</body>
+</html>
